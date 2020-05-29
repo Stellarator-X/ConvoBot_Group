@@ -31,6 +31,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+#PyCache
+__pycache__/
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 .vscode/
