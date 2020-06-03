@@ -4,6 +4,13 @@ from tensorflow.keras.layers import Input, Dense, Activation, Lambda, GRU, Bidir
 from tensorflow.keras.models import Sequential, Model
 from ds_utils import SeqWiseBatchNorm
 
+"""
+TODO@stellarator-x
+    cumulative loss
+    beam search
+    fit_generator
+"""
+
 class DSModel():
 
     def __init__(self, input_shape):
@@ -64,11 +71,15 @@ class DSModel():
 
         return K.ctc_batch_cost(y_true, y_pred, pred_lengths, true_lengths)
 
+    def net_loss():
+        # Summation log loss with ctc, word_count, lang model
+        # Q(y) = log(p ctc (y|x)) + α log(p lm (y)) + β word_count(y)
+
     def summary(self):
         self.model.summary()
 
     def compile(self, )
-        self.model.compile(loss = ctc_find_eos, optimizer = 'adam', metrics = ['accuracy'])
+        self.model.compile(loss = net_loss, optimizer = 'adam', metrics = ['accuracy'])
 
     def fit(self, **kwargs):
         self.model.fit(**kwargs)
