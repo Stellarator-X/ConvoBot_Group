@@ -5,17 +5,27 @@ from tensorflow.keras.models import Sequential, Model
 from ds_utils import SeqWiseBatchNorm
 
 """
-TODO@stellarator-x
-    cumulative loss
-    beam search
-    fit_generator
+TODO 
+    @stellarator-x
+        cumulative loss
+        beam search
+        fit_generator
+    
+    @Anyone
+        eos_index
 """
+
+eos_index  = None
 
 class DSModel():
 
-    def __init__(self, input_shape):
+    def __init__(self, input_shape, alpha = 0.3, beta = 0.2):
         self.input_shape = input_shape
-        self.output_len = None
+        
+        # Tunable hyperparams for net_loss
+        self.alpha = alpha
+        self.beta = beta
+        
     
     def build():
         sefl.model = Sequential([
@@ -69,17 +79,20 @@ class DSModel():
         true_lengths = K.reshape(true_lengths, (-1,1))
         pred_lengths = K.reshape(pred_lengths, (-1,1))
 
-        return K.ctc_batch_cost(y_true, y_pred, pred_lengths, true_lengths)
+        return K.ctc_batch_cost(y_true, y_pred, pred_lengths, true_lengths) + self.beta(pred_lengths) # Maybe a temp fix
 
-    def net_loss():
+    def net_loss(y_true, y_pred):
         # Summation log loss with ctc, word_count, lang model
         # Q(y) = log(p ctc (y|x)) + α log(p lm (y)) + β word_count(y)
+        Loss = K.log(ctc_find_eos(y_true, y_pred)) + self.alpha*K.log(LangMod(y_pred)) #+ self.beta*word_count(y_pred) : need obviated with temp fix
+        return Loss
 
     def summary(self):
         self.model.summary()
 
     def compile(self, )
-        self.model.compile(loss = net_loss, optimizer = 'adam', metrics = ['accuracy'])
+        self.model.compile(loss = net_loss, optimizer = 'adam', metrics = ['word_error_rate'])
+
 
     def fit(self, **kwargs):
         self.model.fit(**kwargs)
