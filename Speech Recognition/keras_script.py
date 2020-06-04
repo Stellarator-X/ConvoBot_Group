@@ -1,7 +1,7 @@
 import numpy as np
 
 from keras.models import Sequential
-from my_classes import DataGenerator
+from my_classes import *
 
 # Parameters
 params = {'dim': (32,32,32),
@@ -11,13 +11,13 @@ params = {'dim': (32,32,32),
           'shuffle': True}
 
 # Datasets
-partition = # IDs
-labels = # Labels
+#partition = # IDs
+#labels = # Labels
 
 # Generators
-training_generator = DataGenerator(partition['train'], labels, **params)
-validation_generator = DataGenerator(partition['validation'], labels, **params)
-
+#training_generator = DataGenerator(partition['train'], labels, **params)
+#validation_generator = DataGenerator(partition['validation'], labels, **params)
+input_shape = 30
 # Design model
 model = DSModel(input_shape)
 model.build()
