@@ -19,7 +19,7 @@ training_generator = DataGenerator(partition['train'], labels, **params)
 validation_generator = DataGenerator(partition['validation'], labels, **params)
 
 # Design model
-model = Sequential()
+model = DSModel(input_shape)
 model.build()
 model.compile()
 
