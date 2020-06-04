@@ -1,7 +1,7 @@
 import numpy as np 
 import tensorflow as tf 
 from tensorflow.keras import backend as K 
-from tensorflow.keras.layers import Input, Dense, Activation, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed
+from tensorflow.keras.layers import Input, Dense, Activation, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed, Permute, Reshape
 from tensorflow.keras.models import Sequential, Model
 from tensorflow_addons.seq2seq import BeamSearchDecoder
 from ds_utils.layers import SeqWiseBatchNorm
@@ -31,15 +31,22 @@ class DSModel():
         self.beta = beta
         
     
-    def build(Name = "DeepSpeech2", num_conv = 3, num_rnn = 7, beam_width = 50): # TODO: Consider contentions with default beam width
+    def build(self, Name = "DeepSpeech2", num_conv = 3, num_rnn = 7, beam_width = 50): # TODO: Consider contentions with default beam width
         
         self.model =  Sequential(name = Name)
-        self.model.add(Input(shape = self.input_shape))
+        # self.model.add(Input(shape = self.input_shape))
 
         # Conv Layers
-        for i in range(num_conv):
-            self.model.add(Conv2D(filters = 16, kernel_size = (3, 3), strides = 3, name = f"Conv{i+1}"))
+        self.model.add(Conv2D(filters = 16, kernel_size = (3, 3), strides = 3, padding='same', input_shape = self.input_shape,  name = f"Conv1"))
+        for i in range(1, num_conv):
+            self.model.add(Conv2D(filters = 16, kernel_size = (3, 3), strides = 3, padding='same',name = f"Conv{i+1}"))
         
+        # self.add(Conv1D(32, 3))
+
+        # Conv2RNN : To be uncommented as per input dims, upon integration
+        # self.model.add(Permute((0, 1, 2, 3)))
+        # self.model.add(Reshape(self.input_shape[-1], 16))
+
         # RNN Layers
         for i in range(num_rnn):
             self.model.add(Bidirectional(GRU(units = 800, return_sequences=True), name = f"RNN{i+1}")),
@@ -96,7 +103,7 @@ class DSModel():
         self.model.summary()
 
     def compile(self):
-        self.model.compile(loss = net_loss, optimizer = 'adam', metrics = ['word_error_rate'])
+        self.model.compile(loss  = net_loss, optimizer = 'adam', metrics = ['word_error_rate'])
 
 
     def fit(self, **kwargs):
