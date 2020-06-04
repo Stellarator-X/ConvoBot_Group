@@ -20,8 +20,10 @@ validation_generator = DataGenerator(partition['validation'], labels, **params)
 
 # Design model
 model = Sequential()
-[...] # Architecture
+model.build()
 model.compile()
+
+model.summary()
 
 # Train model on dataset
 model.fit_generator(generator=training_generator,
