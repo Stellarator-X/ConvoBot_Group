@@ -1,34 +1,25 @@
+def search(model, src_input, k=1, sequence_max_len=25):
+    # (log(1), initialize_of_zeros)
+    k_beam = [(0, [0]*(sequence_max_len+1))]
 
-def beam_search(self, cnn_feats, generated_captions, captions_probs, t, beam_size):
-    # base case: the generated captions have max_len length, so
-    # we can remove the (zero) pad at the end and for each image
-    # we can insert the generated caption and its probablity into
-    # the heap with the best captions
-    if t == self.max_len - 1:
-        for i in range(len(generated_captions)):
-            caption = self.remove_zero_pad(list(generated_captions[i]))
-            self.best_captions[i].push(list(caption), captions_probs[i])
-    else:
-        # otherwise, make a prediction (we only keep the element at time 
-        # step t + 1, as the LSTM has a many-to-many architecture, but we
-        # are only interested in the next token (for each image).
-        pred = self.model.predict(x=[cnn_feats, generated_captions], 
-                              batch_size=128,
-                              verbose=1)[:, t + 1, :]
+    # l : point on target sentence to predict
+    for l in range(sequence_max_len):
+        all_k_beams = []
+        for prob, sent_predict in k_beam:
+            predicted = model.predict([np.array([src_input]), np.array([sent_predict])])[0]
+            # top k!
+            possible_k = predicted[l].argsort()[-k:][::-1]
 
-        # efficiently get the indices of the tokens with the greatest probability 
-        # for each image (they are not necessarily sorted)
-        top_idx = np.argpartition(-pred, range(beam_size), axis=1)[:, :beam_size]
+            # add to all possible candidates for k-beams
+            all_k_beams += [
+                (
+                    sum(np.log(predicted[i][sent_predict[i+1]]) for i in range(l)) + np.log(predicted[l][next_wid]),
+                    list(sent_predict[:l+1])+[next_wid]+[0]*(sequence_max_len-l-1)
+                )
+                for next_wid in possible_k
+            ]
 
-        # store the probability of those tokens
-        top_probs = pred[np.arange(top_idx.shape[0])[:, None], top_idx]
+        # top k
+        k_beam = sorted(all_k_beams)[-k:]
 
-        # for every 'neighbour' (set of newly generated tokens for every image)
-        # get the indices of these tokens, add them to the current captions and 
-        # update the captions probabilities by multiplying them with the probabilities
-        # of the current tokens, then recursively call beam_search
-        for i in range(beam_size):
-            curr_idx = top_idx[:, i]
-            generated_captions[:, t + 1] = curr_idx
-            curr_captions_probs = top_probs[:, i] * captions_probs
-            self.beam_search(cnn_feats, generated_captions, curr_captions_probs, t+1, beam_size)
+    return k_beam
