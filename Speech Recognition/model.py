@@ -4,7 +4,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Input, Dense, Activation, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed
 from tensorflow.keras.models import Sequential, Model
 from tensorflow_addons.seq2seq import BeamSearchDecoder
-from ds_utils import SeqWiseBatchNorm
+from ds_utils.layers import SeqWiseBatchNorm
 
 """
 TODO 
