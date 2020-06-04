@@ -1,21 +1,25 @@
 import numpy as np 
+import tensorflow as tf 
 from tensorflow.keras import backend as K 
 from tensorflow.keras.layers import Input, Dense, Activation, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed
 from tensorflow.keras.models import Sequential, Model
+from tensorflow_addons.seq2seq import BeamSearchDecoder
 from ds_utils import SeqWiseBatchNorm
 
 """
 TODO 
     @stellarator-x
-        cumulative loss
         beam search
-        fit_generator
     
-    @Anyone
+    @anyone
         eos_index
+        max_length
+        lang model integration
 """
 
+ALPHABET_LENGTH = 29
 eos_index  = None
+max_length = None
 
 class DSModel():
 
@@ -27,47 +31,48 @@ class DSModel():
         self.beta = beta
         
     
-    def build():
-        sefl.model = Sequential([
-            Conv2D(filters = 16, kernel_size=(3, 3), strides = 4 ,input_shape = self.input_shape),
-            Conv2D(filters = 16, kernel_size = (3, 3), strides = 3),
-            Conv1D(filters = 32, kernel_size=15, strides = 2),
+    def build(Name = "DeepSpeech2", num_conv = 3, num_rnn = 7, beam_width = 50): # TODO: Consider contentions with default beam width
+        
+        self.model =  Sequential(name = Name)
+        self.model.add(Input(shape = self.input_shape))
 
-            Bidirectional(GRU(units = 128, return_sequences=True)),
-            SeqWiseBatchNorm(),
-            Bidirectional(GRU(units = 128, return_sequences=True)),
-            SeqWiseBatchNorm(),
-            Bidirectional(GRU(units = 128, return_sequences=True)),
-            SeqWiseBatchNorm(),
-            Bidirectional(GRU(units = 128, return_sequences=True)),
-            SeqWiseBatchNorm(),
-            Bidirectional(GRU(units = 128, return_sequences=True)),
-            SeqWiseBatchNorm(),
-            Bidirectional(GRU(units = 128, return_sequences=True)),
-            SeqWiseBatchNorm(),
-            Bidirectional(GRU(units = 128, return_sequences=True)),
-            SeqWiseBatchNorm(return_sequences= True),
+        # Conv Layers
+        for i in range(num_conv):
+            self.model.add(Conv2D(filters = 16, kernel_size = (3, 3), strides = 3, name = f"Conv{i+1}"))
+        
+        # RNN Layers
+        for i in range(num_rnn):
+            self.model.add(Bidirectional(GRU(units = 800, return_sequences=True), name = f"RNN{i+1}")),
+            self.model.add(SeqWiseBatchNorm(name = f"BatchNorm{i+1}"))
 
-            TimeDistributed(Dense(units = ALPHABET_LENGTH, activation=softmax))
-            
-        ], name = "DeepSpeech2")
+        # Beam Search Layer : TODO : Not sure if this is how its supposed to work
+        BeamSearchDecoder(
+            cell = self.model.get_layer(name = f"BatchNorm{i+1}"),
+            beam_width = beam_width,
+            output_layer = Dense(800)
+        )
+        
+        # Final Layer
+        self.model.add(TimeDistributed(Dense(units = ALPHABET_LENGTH, activation=softmax), name = "OutputLayer"))
+
+        try:
+            return self.model
+        except:
+            print("Couldn't build the model")
+            return
 
 
     def ctc_find_eos(y_true, y_pred):
-        # From StackOverflow : TODO : personal tweaks
+        # From SO : TODO : var init, predlength objective
         #convert y_pred from one-hot to label indices
         y_pred_ind = K.argmax(y_pred, axis=-1)
 
         #to make sure y_pred has one end_of_sentence (to avoid errors)
-        y_pred_end = K.concatenate([
-                                    y_pred_ind[:,:-1], 
-                                    eos_index * K.ones_like(y_pred_ind[:,-1:])
-                                ], axis = 1)
+        y_pred_end = K.concatenate([y_pred_ind[:,:-1], eos_index * K.ones_like(y_pred_ind[:,-1:])], axis = 1)
 
         #to make sure the first occurrence of the char is more important than subsequent ones
         occurrence_weights = K.arange(start = max_length, stop=0, dtype=K.floatx())
 
-        #is eos?
         is_eos_true = K.cast_to_floatx(K.equal(y_true, eos_index))
         is_eos_pred = K.cast_to_floatx(K.equal(y_pred_end, eos_index))
 
@@ -90,9 +95,12 @@ class DSModel():
     def summary(self):
         self.model.summary()
 
-    def compile(self, )
+    def compile(self):
         self.model.compile(loss = net_loss, optimizer = 'adam', metrics = ['word_error_rate'])
 
 
     def fit(self, **kwargs):
         self.model.fit(**kwargs)
+
+    def getModel():
+        return self.model
