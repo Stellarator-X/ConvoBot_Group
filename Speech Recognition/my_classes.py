@@ -1,4 +1,10 @@
 from keras.models import Sequential
+from tensorflow.keras import backend as K 
+from tensorflow.keras.layers import Input, Dense, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed, Permute, Reshape
+from tensorflow.keras.models import Sequential, Model
+from tensorflow_addons.seq2seq import BeamSearchDecoder
+from ds_utils.layers import SeqWiseBatchNorm
+
 class DataGenerator(): 
     def __init__(self, list_IDs, labels, batch_size=32, dim=(32,32,32), n_channels=1,
              n_classes=10, shuffle=True):
@@ -16,7 +22,7 @@ class DataGenerator():
       'Updates indexes after each epoch'
       self.indexes = np.arange(len(self.list_IDs))
       if self.shuffle == True:
-          np.random.shuffle(self.indexes)
+          np.random.shuffle(self.indexes)io/OpenSeq2Seq/ht
 
     def __data_generation(self, list_IDs_temp):
       'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
@@ -51,9 +57,9 @@ class DataGenerator():
 
       return X, y
 
-ALPHABET_LENGTH = 29
-eos_index  = None
-max_length = None
+ALPHABET_LENGTH = 30
+eos_index  = 30
+max_length = 10000 #
 
 class DSModel(): 
   def __init__(self, input_shape, alpha = 0.3, beta = 0.2):
@@ -77,7 +83,7 @@ class DSModel():
 
       # Conv2RNN : To be uncommented as per input dims, upon integration
       # self.model.add(Permute((0, 1, 2, 3)))
-      # self.model.add(Reshape(self.input_shape[-1], 16))
+      self.model.add(Reshape(self.input_shape[-1], 16))
 
       # RNN Layers
       for i in range(num_rnn):
@@ -93,7 +99,7 @@ class DSModel():
           
       # Final Layer
       self.model.add(TimeDistributed(Dense(units = ALPHABET_LENGTH, activation=softmax), name = "OutputLayer"))
-
+loading the dataset 
       try:
           return self.model
       except:
@@ -127,7 +133,7 @@ class DSModel():
   def net_loss(y_true, y_pred):
       # Summation log loss with ctc, word_count, lang model
       # Q(y) = log(p ctc (y|x)) + α log(p lm (y)) + β word_count(y)
-      Loss = K.log(ctc_find_eos(y_true, y_pred)) + self.alpha*K.log(LangMod(y_pred)) #+ self.beta*word_count(y_pred) : need obviated with temp fix
+      Loss = K.log(ctc_find_eos(y_true, y_pred)) #+ self.alpha*K.log(LangMod(y_pred)) #+ self.beta*word_count(y_pred) : need obviated with temp fix
       return Loss
 
   def summary(self):
