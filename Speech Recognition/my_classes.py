@@ -1,4 +1,6 @@
-from keras.models import Sequential
+import numpy as np 
+import tensorflow as tf 
+from tensorflow.keras.models import Sequential
 from tensorflow.keras import backend as K 
 from tensorflow.keras.layers import Input, Dense, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed, Permute, Reshape
 from tensorflow.keras.models import Sequential, Model
@@ -22,7 +24,7 @@ class DataGenerator():
       'Updates indexes after each epoch'
       self.indexes = np.arange(len(self.list_IDs))
       if self.shuffle == True:
-          np.random.shuffle(self.indexes)io/OpenSeq2Seq/ht
+          np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_IDs_temp):
       'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
@@ -99,7 +101,6 @@ class DSModel():
           
       # Final Layer
       self.model.add(TimeDistributed(Dense(units = ALPHABET_LENGTH, activation=softmax), name = "OutputLayer"))
-loading the dataset 
       try:
           return self.model
       except:
