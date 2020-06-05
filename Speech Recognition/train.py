@@ -1,7 +1,9 @@
-# This will probably work better as a notebook
+# To be run as a notebook
+# Pipeline for training the model
 
 from model import *
 import tensorflow as tf 
+from my_classes import DataGenerator
 import os
 """
 Loading the Data
@@ -44,34 +46,36 @@ def get_data(path = 'LibriSpeech/'):
     
     data = np.array(data)
     data = data[:, :-1] # The last index is NoneType
-    print(data.shape)
+    print(f"Loaded dataset with shape {data.shape}")
     return data
 
-"""
-Data Generation
-"""
-datagen = None
-# First batch with samples in increasing order
-firstset = None
-
+#Data Generation
+data = get_data()
+dataset = DataGenerator(data[:, 0], data[:, 1])
 """
 Data Augmentation
 """
 
+
+
 # Building the model
-input_shape = None
+input_shape = (32, 32, 32)
 
+def main():
+    model = DSModel(input_shape)
+    model.build()
+    model.compile()
 
-# model = DSModel(input_shape)
-# model.build()
-# model.compile()
+    model.summary()
+    input()
 
-# model.summary()
+    # Training with sortagrad
+    hist1 = model.fit(dataset, epochs = 1)
+    hist2 = model.fit(dataset, epochs = 10)
 
-# # Training with sortagrad
-# hist1 = model.fit(firstset, epochs = 1)
-# hist2 = model.fit(datagen, epochs = 10, validation_data = None)
+    m1 = model.getModel()
 
-# m1 = model.getModel()
+    m1.save("DSM")
 
-# m1.save("DSM")
+if __name__ == "__main__":
+    main()

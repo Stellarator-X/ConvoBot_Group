@@ -1,7 +1,7 @@
 import numpy as np 
 import tensorflow as tf 
 from tensorflow.keras import backend as K 
-from tensorflow.keras.layers import Input, Dense, Activation, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed, Permute, Reshape
+from tensorflow.keras.layers import Input, Dense, Lambda, GRU, Bidirectional, Conv1D, Conv2D, TimeDistributed, Permute, Reshape
 from tensorflow.keras.models import Sequential, Model
 from tensorflow_addons.seq2seq import BeamSearchDecoder
 from ds_utils.layers import SeqWiseBatchNorm
@@ -31,7 +31,7 @@ class DSModel():
         self.beta = beta
         
     
-    def build(self, Name = "DeepSpeech2", num_conv = 3, num_rnn = 7, beam_width = 50): # TODO: Consider contentions with default beam width
+    def build(self, Name = "DeepSpeech2", num_conv = 3, num_rnn = 7, beam_width = 50):
         
         self.model =  Sequential(name = Name)
         # self.model.add(Input(shape = self.input_shape))
@@ -41,26 +41,23 @@ class DSModel():
         for i in range(1, num_conv):
             self.model.add(Conv2D(filters = 16, kernel_size = (3, 3), strides = 3, padding='same',name = f"Conv{i+1}"))
         
-        # self.add(Conv1D(32, 3))
-
-        # Conv2RNN : To be uncommented as per input dims, upon integration
-        # self.model.add(Permute((0, 1, 2, 3)))
-        # self.model.add(Reshape(self.input_shape[-1], 16))
+        # Conv2RNN 
+        self.model.add(Reshape((self.input_shape[-1], 16)))
 
         # RNN Layers
         for i in range(num_rnn):
             self.model.add(Bidirectional(GRU(units = 800, return_sequences=True), name = f"RNN{i+1}")),
             self.model.add(SeqWiseBatchNorm(name = f"BatchNorm{i+1}"))
 
-        # Beam Search Layer : TODO : Not sure if this is how its supposed to work
-        BeamSearchDecoder(
-            cell = self.model.get_layer(name = f"BatchNorm{i+1}"),
-            beam_width = beam_width,
-            output_layer = Dense(800)
-        )
+        # Beam Search Layer : For later implementations, requires a monodir rnn cell
+        # self.model.add(BeamSearchDecoder(
+        #     cell = self.model.get_layer(name = f"RNN{i+1}"),
+        #     beam_width = beam_width,
+        #     output_layer = Dense(800)
+        # ))
         
         # Final Layer
-        self.model.add(TimeDistributed(Dense(units = ALPHABET_LENGTH, activation=softmax), name = "OutputLayer"))
+        self.model.add(TimeDistributed(Dense(units = ALPHABET_LENGTH, activation='softmax'), name = "OutputLayer"))
 
         try:
             return self.model
@@ -70,7 +67,7 @@ class DSModel():
 
 
     def ctc_find_eos(y_true, y_pred):
-        # From SO : TODO : var init, predlength objective
+        # From SO : Todo : var init, predlength objective
         #convert y_pred from one-hot to label indices
         y_pred_ind = K.argmax(y_pred, axis=-1)
 
@@ -93,6 +90,7 @@ class DSModel():
 
         return K.ctc_batch_cost(y_true, y_pred, pred_lengths, true_lengths) + self.beta(pred_lengths) # Maybe a temp fix
 
+    @staticmethod
     def net_loss(y_true, y_pred):
         # Summation log loss with ctc, word_count, lang model
         # Q(y) = log(p ctc (y|x)) + α log(p lm (y)) + β word_count(y)
@@ -103,7 +101,7 @@ class DSModel():
         self.model.summary()
 
     def compile(self):
-        self.model.compile(loss  = net_loss, optimizer = 'adam', metrics = ['word_error_rate'])
+        self.model.compile(loss  = self.net_loss, optimizer = 'adam', metrics = ['word_error_rate'])
 
 
     def fit(self, **kwargs):

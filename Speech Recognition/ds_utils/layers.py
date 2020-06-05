@@ -5,7 +5,7 @@ import copy
 
 class SeqWiseBatchNorm(tf.keras.layers.Layer):
 
-    def __init__(self, return_sequences = True):
+    def __init__(self, return_sequences = True, **kwargs):
         """
         param : return_sequences - return_sequences equivalent for the previous layer;
                         We need the previous layers' return_sequences to be True for seq_wise batchnorm
@@ -13,7 +13,7 @@ class SeqWiseBatchNorm(tf.keras.layers.Layer):
        
 
         # For input-dependent initialisation
-        super(SeqWiseBatchNorm, self).__init__()
+        super(SeqWiseBatchNorm, self).__init__(**kwargs)
         self.return_sequences = return_sequences
 
     def build(self, input_shape):
