@@ -4,6 +4,8 @@ import itertools
 import librosa
 import matplotlib.pyplot as plt
 
+path_to_dataset = "LibriSpeech/" # User-dependent
+
 def load_audio_file(file_path):
     input_length = 16000
     data = librosa.core.load(file_path)[0] #, sr=16000
@@ -60,7 +62,7 @@ def pitch(data, sampling_rate, pitch_factor):
 def speed(data, speed_factor):
     return librosa.effects.time_stretch(data, speed_factor)
 
-data = load_audio_file("./data/dev-clean/84/121123/84-121123-0000.flac")
+data = load_audio_file(f"{path_to_dataset}/dev-clean/84/121123/84-121123-0000.flac")
 plot_time_series(data)
 
 aug = noise(data,2)
